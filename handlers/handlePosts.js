@@ -52,21 +52,29 @@ export async function getPosts(env) {
 	return data;
 }
 
+// template/handlers/handlePosts.js
+
 /**
  * Menampilkan halaman daftar semua post.
+ * VERSI INI DIPERBAIKI: Hanya merender 8 post pertama untuk tampilan awal.
  * @param {object} env - Variabel lingkungan Cloudflare.
  */
 async function showPostList(env) {
 	const postsData = await getPosts(env);
 
-	const postsHtml = postsData
+	// Ambil hanya 8 post pertama untuk render awal di server
+	const initialPosts = postsData.slice(0, 8);
+
+	const postsHtml = initialPosts
 		.map((post) => {
 			const cleanedTitle = cleanTitle(post.title);
 			const firstImage = getFirstImage(post.content);
+			// Struktur HTML ini bisa Anda sesuaikan dengan desain Anda
 			return `<div class="post-item"><a href="/${post.slug}"><img src="${firstImage}" alt="${cleanedTitle}" loading="lazy"><h3>${cleanedTitle}</h3></a></div>`;
 		})
 		.join('');
 
+	// Ganti nama placeholder agar cocok dengan template Anda
 	const pageContent = await renderTemplate(postsTemplate, { POST_LIST: postsHtml });
 	const meta = generateMeta({ title: settings.siteTitle, description: settings.siteDescription });
 

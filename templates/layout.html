@@ -54,5 +54,78 @@
     </footer>
 
     <script>document.addEventListener("DOMContentLoaded",(()=>{const e=document.getElementById("menuBtn"),t=document.getElementById("mobileMenu"),n=document.getElementById("closeMenuBtn");e&&t&&n&&(e.addEventListener("click",(()=>{t.style.display="block",document.body.classList.add("menu-open")})),n.addEventListener("click",(()=>{t.style.display="none",document.body.classList.remove("menu-open")})));const d=document.getElementById("searchBtn"),o=document.getElementById("searchOverlay"),s=document.getElementById("closeSearchBtn"),c=document.getElementById("searchInput"),l=document.getElementById("searchResults");if(d&&o&&s&&c){let e=[];fetch("/search-data.json").then((e=>e.json())).then((t=>{e=t})),d.addEventListener("click",(()=>{o.style.display="block",document.body.classList.add("search-open"),c.focus()})),s.addEventListener("click",(()=>{o.style.display="none",document.body.classList.remove("search-open")})),c.addEventListener("input",(t=>{const n=t.target.value.toLowerCase();if(n.length<2)return void(l.innerHTML="");const d=e.filter((e=>e.title.toLowerCase().includes(n)));d.length>0?l.innerHTML=d.map((e=>`<a href="${e.url}" class="search-item">${e.title}</a>`)).join(""):l.innerHTML='<div style="padding: 10px;">No results found.</div>'}))}const a=document.getElementById("loadMoreBtn"),i=document.getElementById("postGrid");if(a&&i){let e=1;a.addEventListener("click",(()=>{e++,a.disabled=!0,a.textContent="Loading...",fetch(`/api/posts?page=${e}`).then((e=>e.json())).then((e=>{e.length>0?(e.forEach((e=>{const t=`\n                                <div class="post-card">\n                                    <a href="/${e.slug}">\n                                        <img src="${e.image}" alt="${e.title}" class="post-card-image" onerror="this.onerror=null;this.src='https://placehold.co/300x200/png';">\n                                        <h2 class="post-card-title">${e.title}</h2>\n                                    </a>\n                                </div>\n                            `;i.insertAdjacentHTML("beforeend",t)})),a.disabled=!1,a.textContent="Load More"):(a.textContent="End of Posts",a.style.display="none")}))}))}const m=document.getElementById("themeToggleBtn"),r=document.getElementById("theme-icon-sun"),u=document.getElementById("theme-icon-moon"),h=e=>{r&&u&&(r.style.display=e?"block":"none",u.style.display=e?"none":"block")},g=e=>{"dark"===e?(document.documentElement.classList.add("dark-mode"),h(!0)):(document.documentElement.classList.remove("dark-mode"),h(!1))};m&&m.addEventListener("click",(()=>{const e=document.documentElement.classList.toggle("dark-mode"),t=e?"dark":"light";localStorage.setItem("theme",t),h(e)}));const y=localStorage.getItem("theme"),p=window.matchMedia("(prefers-color-scheme: dark)").matches;g(y||(p?"dark":"light"))}));</script>
+<script>
+    // Pastikan skrip berjalan setelah seluruh halaman dimuat
+    document.addEventListener('DOMContentLoaded', () => {
+        const postsContainer = document.getElementById('posts-container');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        
+        // Hentikan jika ini bukan halaman utama (elemen tidak ditemukan)
+        if (!postsContainer || !loadMoreBtn) {
+            return;
+        }
+
+        let allPosts = [];
+        // Kita mulai dari indeks 8, karena 8 post pertama sudah ditampilkan oleh server
+        let currentIndex = 8; 
+        const postsPerPage = 4; // Tampilkan 4 post setiap kali load more
+
+        // Fungsi untuk merender 4 post berikutnya
+        const renderMorePosts = () => {
+            const postsToShow = allPosts.slice(currentIndex, currentIndex + postsPerPage);
+            
+            let html = '';
+            postsToShow.forEach(post => {
+                // Pastikan struktur HTML ini sama dengan yang di handlePosts.js
+                const cleanedTitle = post.title; // Asumsi judul sudah bersih
+                const firstImage = post.content ? (post.content.match(/<img src=(?:\"|')([^\"']+)(\\"|')/) || [])[1] || 'https://placehold.co/300x200/png' : 'https://placehold.co/300x200/png';
+
+                html += `
+                    <div class="post-item">
+                        <a href="/${post.slug}">
+                            <img src="${firstImage}" alt="${cleanedTitle}" loading="lazy">
+                            <h3>${cleanedTitle}</h3>
+                        </a>
+                    </div>
+                `;
+            });
+
+            postsContainer.insertAdjacentHTML('beforeend', html); // Menambahkan post baru
+            currentIndex += postsPerPage;
+
+            // Sembunyikan tombol jika semua post sudah ditampilkan
+            if (currentIndex >= allPosts.length) {
+                loadMoreBtn.style.display = 'none';
+            }
+        };
+
+        // Fungsi untuk mengambil SEMUA data post dari endpoint API
+        const fetchAllPosts = async () => {
+            try {
+                // Kita gunakan endpoint /api yang sudah kita buat
+                const response = await fetch('/api'); 
+                if (!response.ok) {
+                    throw new Error('Gagal mengambil data posts');
+                }
+                
+                allPosts = await response.json();
+                
+                // Sembunyikan tombol jika total post <= 8
+                if (allPosts.length <= 8) {
+                    loadMoreBtn.style.display = 'none';
+                }
+            } catch (error) {
+                loadMoreBtn.textContent = 'Gagal memuat';
+                console.error('Fetch error:', error);
+            }
+        };
+
+        // Tambahkan event listener ke tombol
+        loadMoreBtn.addEventListener('click', renderMorePosts);
+
+        // Panggil fungsi untuk mengambil semua data di latar belakang saat halaman dimuat
+        fetchAllPosts();
+    });
+</script>
 </body>
 </html>
