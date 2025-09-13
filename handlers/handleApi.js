@@ -1,31 +1,42 @@
 // template/handlers/handleApi.js
 
-import { getPosts } from './handlePosts.js'; // Impor fungsi getPosts yang sudah benar
+import { getPosts } from './handlePosts.js';
 
-/**
- * Handler utama untuk endpoint API (/api).
- * Fungsi ini mengambil data dari GitHub dan menyajikannya sebagai JSON.
- * @param {Request} request - Objek request yang masuk.
- * @param {object} env - Variabel lingkungan Cloudflare.
- */
+// Fungsi pencari gambar yang sama persis dengan yang ada di handlePosts.js
+function getFirstImage(htmlContent) {
+    if (!htmlContent) return 'https://placehold.co/300x200/png';
+    const regex = /<img[^>]+src="([^"]+)"/g;
+    const matches = [...htmlContent.matchAll(regex)];
+    for (const match of matches) {
+        const imageUrl = match[1];
+        if (imageUrl && !imageUrl.includes('this.onerror')) {
+            return imageUrl.replace(/&amp;/g, '&');
+        }
+    }
+    return 'https://placehold.co/300x200/png';
+}
+
 export async function handleApiRequest(request, env) {
 	try {
-		// 1. Ambil data posts secara online dari GitHub melalui fungsi terpusat
 		const postsData = await getPosts(env);
 
-		// 2. Ubah data menjadi string JSON yang rapi
-		const data = JSON.stringify(postsData, null, 2);
+		// Tambahkan properti 'featured_image' ke setiap post
+		const processedData = postsData.map(post => {
+			return {
+				...post, // Salin semua properti asli post
+				featured_image: getFirstImage(post.content) // Tambahkan properti baru
+			};
+		});
 
-		// 3. Kirim data sebagai response dengan header yang benar
+		const data = JSON.stringify(processedData, null, 2);
 		return new Response(data, {
 			headers: {
 				'Content-Type': 'application/json;charset=UTF-8',
-				'Access-Control-Allow-Origin': '*', // Izinkan akses dari mana saja (CORS)
-                'Cache-Control': 's-maxage=3600' // Cache di server selama 1 jam
+				'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 's-maxage=3600'
 			},
 		});
 	} catch (error) {
-		// Jika terjadi error saat pengambilan data
 		console.error('API Error:', error);
 		const errorResponse = JSON.stringify({
             status: 'error',
@@ -33,7 +44,7 @@ export async function handleApiRequest(request, env) {
             details: error.message
         });
 		return new Response(errorResponse, {
-			status: 500, // Internal Server Error
+			status: 500,
 			headers: { 
                 'Content-Type': 'application/json' 
             },
