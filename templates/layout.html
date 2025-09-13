@@ -98,18 +98,23 @@
     </footer>
 
     <script>document.addEventListener("DOMContentLoaded",(()=>{const e=document.getElementById("menuBtn"),t=document.getElementById("mobileMenu"),n=document.getElementById("closeMenuBtn");e&&t&&n&&(e.addEventListener("click",(()=>{t.style.display="block",document.body.classList.add("menu-open")})),n.addEventListener("click",(()=>{t.style.display="none",document.body.classList.remove("menu-open")})));const d=document.getElementById("searchBtn"),o=document.getElementById("searchOverlay"),s=document.getElementById("closeSearchBtn"),c=document.getElementById("searchInput"),l=document.getElementById("searchResults");if(d&&o&&s&&c){let e=[];fetch("/search-data.json").then((e=>e.json())).then((t=>{e=t})),d.addEventListener("click",(()=>{o.style.display="block",document.body.classList.add("search-open"),c.focus()})),s.addEventListener("click",(()=>{o.style.display="none",document.body.classList.remove("search-open")})),c.addEventListener("input",(t=>{const n=t.target.value.toLowerCase();if(n.length<2)return void(l.innerHTML="");const d=e.filter((e=>e.title.toLowerCase().includes(n)));d.length>0?l.innerHTML=d.map((e=>`<a href="${e.url}" class="search-item">${e.title}</a>`)).join(""):l.innerHTML='<div style="padding: 10px;">No results found.</div>'}))}const a=document.getElementById("loadMoreBtn"),i=document.getElementById("postGrid");if(a&&i){let e=1;a.addEventListener("click",(()=>{e++,a.disabled=!0,a.textContent="Loading...",fetch(`/api/posts?page=${e}`).then((e=>e.json())).then((e=>{e.length>0?(e.forEach((e=>{const t=`\n                                <div class="post-card">\n                                    <a href="/${e.slug}">\n                                        <img src="${e.image}" alt="${e.title}" class="post-card-image" onerror="this.onerror=null;this.src='https://placehold.co/300x200/png';">\n                                        <h2 class="post-card-title">${e.title}</h2>\n                                    </a>\n                                </div>\n                            `;i.insertAdjacentHTML("beforeend",t)})),a.disabled=!1,a.textContent="Load More"):(a.textContent="End of Posts",a.style.display="none")}))}))}const m=document.getElementById("themeToggleBtn"),r=document.getElementById("theme-icon-sun"),u=document.getElementById("theme-icon-moon"),h=e=>{r&&u&&(r.style.display=e?"block":"none",u.style.display=e?"none":"block")},g=e=>{"dark"===e?(document.documentElement.classList.add("dark-mode"),h(!0)):(document.documentElement.classList.remove("dark-mode"),h(!1))};m&&m.addEventListener("click",(()=>{const e=document.documentElement.classList.toggle("dark-mode"),t=e?"dark":"light";localStorage.setItem("theme",t),h(e)}));const y=localStorage.getItem("theme"),p=window.matchMedia("(prefers-color-scheme: dark)").matches;g(y||(p?"dark":"light"))}));</script>
+    </main>
+
+    <footer>
+        </footer>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const postsContainer = document.getElementById('posts-container');
             const loadMoreBtn = document.getElementById('load-more-btn');
             
-            // Hentikan eksekusi jika ini bukan halaman utama (karena tombol/wadah tidak ada)
+            // Hentikan jika ini bukan halaman utama (karena tombol/wadah tidak ada)
             if (!postsContainer || !loadMoreBtn) {
                 return;
             }
 
             let allPosts = [];
-            let currentIndex = 8; // Kita mulai dari indeks 8, karena 8 post pertama sudah ada
+            let currentIndex = 8; // Mulai dari indeks 8, karena 8 post pertama sudah ada
             const postsPerPage = 4;
 
             // Fungsi untuk merender 4 post berikutnya
@@ -120,12 +125,13 @@
                 postsToShow.forEach(post => {
                     // Gunakan properti 'featured_image' yang sudah disediakan oleh API
                     const featuredImage = post.featured_image;
+                    const postTitle = post.title || 'Tanpa Judul'; // Menangani post tanpa judul
                     
                     html += `
                         <div class="post-item">
                             <a href="/${post.slug}">
-                                <img src="${featuredImage}" alt="${post.title || 'Tanpa Judul'}" loading="lazy">
-                                <h3>${post.title || 'Tanpa Judul'}</h3>
+                                <img src="${featuredImage}" alt="${postTitle}" loading="lazy">
+                                <h3>${postTitle}</h3>
                             </a>
                         </div>
                     `;
@@ -140,10 +146,9 @@
                 }
             };
 
-            // Fungsi untuk mengambil SEMUA data post dari API
+            // Fungsi untuk mengambil SEMUA data post dari endpoint API
             const fetchAllPosts = async () => {
                 try {
-                    // Gunakan endpoint /api yang sudah kita buat
                     const response = await fetch('/api'); 
                     if (!response.ok) {
                         throw new Error(`Gagal mengambil data: ${response.statusText}`);
@@ -162,25 +167,12 @@
                 }
             };
 
-            // Tambahkan event listener ke tombol
-            loadMoreBtn.addEventListener('click', () => {
-                // Tampilkan status loading saat tombol diklik
-                const originalText = loadMoreBtn.textContent;
-                loadMoreBtn.textContent = 'Loading...';
-                loadMoreBtn.disabled = true;
-
-                // Beri jeda sedikit agar pengguna melihat status "Loading..."
-                setTimeout(() => {
-                    renderMorePosts();
-                    loadMoreBtn.textContent = originalText;
-                    loadMoreBtn.disabled = false;
-                }, 200); // Jeda 200 milidetik
-            });
+            // Tambahkan event listener ke tombol "Load More"
+            loadMoreBtn.addEventListener('click', renderMorePosts);
 
             // Panggil fungsi untuk mengambil semua data di latar belakang saat halaman dimuat
             fetchAllPosts();
         });
     </script>
-
 </body>
 </html>
